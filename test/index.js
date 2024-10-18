@@ -44,31 +44,47 @@ describe('fib-build', () => {
         cp(path.join(__dirname, '..', 'node_modules'), path.join(current_folder, 'node_modules'));
 
         cp(path.join(__dirname, '..', 'fbuild.js'), path.join(current_folder, 'node_modules', 'fib-build', 'fbuild.js'));
+        fs.mkdir(path.join(current_folder, 'node_modules', '.bin'), { recursive: true });
         fs.symlink(path.join(current_folder, 'node_modules', 'fib-build', 'fbuild.js'), path.join(current_folder, 'node_modules', '.bin', 'fbuild'));
         fs.chmod(path.join(current_folder, 'node_modules', '.bin', 'fbuild'), 493);
+        rm(path.join(current_folder, 'hello.exe'));
     }
 
-    function test_one() {
-        const res = child_process.execFile(process.execPath,
-            [
-                'fbuild',
-                '.',
-                '--outfile=hello.exe'
-            ], {
-            cwd: current_folder
-        });
+    function test_one(legacyMode = false) {
+        const args = [
+            'fbuild',
+            '.',
+            '--outfile=hello.exe'
+        ];
 
-        console.log(res.stdout);
+        if (legacyMode)
+            args.push('--legacy');
+
+        const res = child_process.execFile(process.execPath, args, { cwd: current_folder });
+
+        if (res.exitCode !== 0)
+            throw new Error(res.stdout);
+
+        // console.log(res.stdout);
 
         return [
             $`${process.execPath} ${current_folder}`,
-            $`${path.join(current_folder, 'hello.exe')}`
+            $`${path.join(current_folder, 'hello.exe')} -v`
         ];
     }
 
+    it("do not overwrite", () => {
+        prepare("test0");
+        fs.writeFile(path.join(__dirname, 'samples', 'test0', 'hello.exe'), 'hello');
+
+        assert.throws(() => {
+            test_one()
+        });
+    });
+
     it("Hello World!", () => {
         prepare("test1");
-        assert.deepEqual(test_one("test1"), [
+        assert.deepEqual(test_one(), [
             'Hello, World!',
             'Hello, World!'
         ]);
@@ -89,15 +105,23 @@ describe('fib-build', () => {
         assert.deepEqual(test_one(), [
             "fbuild found",
             "fbuild not found"
-          ]);
+        ]);
     });
 
-    it("ignore postject", () => {
+    it("ignore fib-inject", () => {
         prepare("test4");
         assert.deepEqual(test_one(), [
-            "postject found",
-            "postject not found"
-          ]);
+            "fib-inject found",
+            "fib-inject not found"
+        ]);
+    });
+
+    it("Legacy Mode", () => {
+        prepare("test5");
+        assert.deepEqual(test_one(true), [
+            'Hello, World!',
+            'Hello, World!'
+        ]);
     });
 });
 

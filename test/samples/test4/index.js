@@ -3,8 +3,8 @@ const path = require('path');
 
 fs.readFile(__filename);
 try {
-    fs.readFile(path.join(__dirname, 'node_modules', 'postject', 'package.json'), 'utf8');
-    console.log('postject found');
+    fs.readFile(path.join(__dirname, 'node_modules', 'fib-inject', 'package.json'), 'utf8');
+    console.log('fib-inject found');
 } catch (e) {
-    console.log('postject not found');
+    console.log('fib-inject not found');
 }

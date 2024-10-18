@@ -6,14 +6,18 @@ const io = require('io');
 const path = require('path');
 const $ = require('child_process').sh;
 
-const { inject } = require('postject');
+const { inject } = require('fib-inject');
 
 const usage = `\n\x1b[1mUsage:\x1b[0m
     fibjs fbuild <folder> --outfile=<file>
 
 \x1b[1mOptions:\x1b[0m
     --outfile=<file>     The output file, required
+
     --execfile=<file>    The base executable file, default is the current executable
+    --legacy             Use legacy mode to append data to the end of outfile
+
+    --help               Show this help message
 `;
 
 if (process.argv.length < 3) {
@@ -21,9 +25,11 @@ if (process.argv.length < 3) {
     process.exit(1);
 }
 
+const sentinelFuse = "FIBJS_FUSE_fe21d3488eb4cdf267e5ea624f2006ce";
 var execfile = process.execPath;
 var outfile;
 var folder = process.argv[2];
+var useLegacyMode = false;
 const ignores = [];
 
 function config() {
@@ -33,6 +39,8 @@ function config() {
             execfile = arg.substr(11);
         } else if (arg.startsWith('--outfile=')) {
             outfile = arg.substr(10);
+        } else if (arg === '--legacy') {
+            useLegacyMode = true;
         } else {
             console.log(`Unknown option: ${arg}`);
             console.log("");
@@ -55,25 +63,64 @@ function config() {
     folder:   ${folder}
     execfile: ${execfile}
     outfile:  ${outfile}
+    Legacy Mode: ${useLegacyMode ? 'Enabled' : 'Disabled'}
     `);
-
 
     if (__dirname.startsWith(folder + path.sep))
         ignores.push(__dirname.substring(folder.length + 1) + path.sep);
 
-    var postject_folder = Object.keys(module.require.cache).pop();
-    if (postject_folder.startsWith(folder + path.sep)) {
-        const module_folder = path.join('node_modules', 'postject');
-        var pos = postject_folder.indexOf(module_folder);
+    var inject_folder = Object.keys(module.require.cache).pop();
+    if (inject_folder.startsWith(folder + path.sep)) {
+        const module_folder = path.join('node_modules', 'fib-inject');
+        var pos = inject_folder.indexOf(module_folder);
         if (pos > 0) {
-            postject_folder = postject_folder.substring(0, pos + module_folder.length + 1);
-            if (postject_folder.startsWith(folder + path.sep))
-                ignores.push(postject_folder.substring(folder.length + 1));
+            inject_folder = inject_folder.substring(0, pos + module_folder.length + 1);
+            if (inject_folder.startsWith(folder + path.sep))
+                ignores.push(inject_folder.substring(folder.length + 1));
         }
     }
 }
 
 async function build() {
+    function make_sentinel() {
+        var buffer = fs.readFile(outfile);
+
+        const firstSentinel = buffer.indexOf(sentinelFuse);
+
+        if (firstSentinel === -1) {
+            throw new Error(
+                `Could not find the sentinel ${sentinelFuse} in the binary`
+            );
+        }
+
+        const lastSentinel = buffer.lastIndexOf(sentinelFuse);
+
+        if (firstSentinel !== lastSentinel) {
+            throw new Error(
+                `Multiple occurences of sentinel "${sentinelFuse}" found in the binary`
+            );
+        }
+
+        const colonIndex = firstSentinel + sentinelFuse.length;
+        if (buffer[colonIndex] !== ":".charCodeAt(0)) {
+            throw new Error(
+                `Value at index ${colonIndex} must be ':' but '${buffer[
+                    colonIndex
+                ].charCodeAt(0)}' was found`
+            );
+        }
+
+        const hasResourceIndex = firstSentinel + sentinelFuse.length + 1;
+        const hasResourceValue = buffer[hasResourceIndex];
+        if (hasResourceValue === "0".charCodeAt(0)) {
+            buffer[hasResourceIndex] = "2".charCodeAt(0);
+        } else {
+            throw new Error("Sentinel already exists");
+        }
+
+        fs.writeFile(outfile, buffer);
+    }
+
     function is_ignore(file) {
         if (file.startsWith('.'))
             return true;
@@ -87,6 +134,11 @@ async function build() {
         }
 
         return false;
+    }
+
+    if (fs.exists(outfile)) {
+        console.log(`${outfile} already exists, please remove it first.\n`);
+        process.exit(1);
     }
 
     console.log("Building...\n");
@@ -131,14 +183,34 @@ async function build() {
     if (process.platform !== 'win32')
         fs.chmod(outfile, 493);
 
-    await inject(outfile, 'APP', data, {
-        sentinelFuse: "FIBJS_FUSE_fe21d3488eb4cdf267e5ea624f2006ce",
-        overwrite: true
-    });
+    if (!useLegacyMode) {
+        try {
+            await inject(outfile, 'APP', data, {
+                sentinelFuse,
+                overwrite: true
+            });
+        } catch (e) {
+            console.log(e);
+            useLegacyMode = true;
+        }
 
-    if (process.platform === 'darwin' && $`file ${outfile}`.indexOf('Mach-O') > 0) {
-        console.log(`Signing ${outfile} ...\n`);
-        console.log($`codesign -s - ${outfile}`);
+        if (!useLegacyMode) {
+            if (process.platform === 'darwin' && $`file ${outfile}`.indexOf('Mach-O') > 0) {
+                console.log(`Signing ${outfile} ...\n`);
+                console.log($`codesign -s - ${outfile}`);
+            }
+        }
+    }
+
+    if (useLegacyMode) {
+        make_sentinel();
+
+        if (process.platform === 'darwin' && $`file ${outfile}`.indexOf('Mach-O') > 0) {
+            console.log(`Signing ${outfile} ...\n`);
+            console.log($`codesign -s - ${outfile}`);
+        }
+
+        fs.appendFile(outfile, data);
     }
 
     console.log("Done.\n");
