@@ -4,6 +4,7 @@ test.setup();
 const fs = require('fs');
 const path = require('path');
 const child_process = require('child_process');
+const win32_cli = require('internal/helpers/win32_cli');
 const $ = child_process.sh;
 
 describe('fib-build', () => {
@@ -45,8 +46,15 @@ describe('fib-build', () => {
 
         cp(path.join(__dirname, '..', 'fbuild.js'), path.join(current_folder, 'node_modules', 'fib-build', 'fbuild.js'));
         fs.mkdir(path.join(current_folder, 'node_modules', '.bin'), { recursive: true });
-        fs.symlink(path.join(current_folder, 'node_modules', 'fib-build', 'fbuild.js'), path.join(current_folder, 'node_modules', '.bin', 'fbuild'));
-        fs.chmod(path.join(current_folder, 'node_modules', '.bin', 'fbuild'), 493);
+
+        if (process.platform === 'win32') {
+            const scripts = win32_cli("fibjs", "..\\fib-build\\fbuild.js");
+            fs.writeFile(path.join(current_folder, 'node_modules', '.bin', 'fbuild'), scripts.sh);
+        } else {
+            fs.symlink(path.join(current_folder, 'node_modules', 'fib-build', 'fbuild.js'), path.join(current_folder, 'node_modules', '.bin', 'fbuild'));
+            fs.chmod(path.join(current_folder, 'node_modules', '.bin', 'fbuild'), 493);
+        }
+
         rm(path.join(current_folder, 'hello.exe'));
     }
 
@@ -125,4 +133,4 @@ describe('fib-build', () => {
     });
 });
 
-test.run();
+test.run(console.DEBUG);

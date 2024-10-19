@@ -125,7 +125,7 @@ async function build() {
         if (file.startsWith('.'))
             return true;
 
-        if (file.indexOf('/.') > 0)
+        if (file.indexOf(path.sep + '.') > 0)
             return true;
 
         for (var i = 0; i < ignores.length; i++) {
