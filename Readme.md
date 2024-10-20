@@ -93,7 +93,7 @@ During the build process, fib-build optimizes the packaging by excluding certain
 
 - Files within directories that start with a dot (.), such as .git or .env.
 - Files located in the fib-build module directory.
-- Files located in the postject module directory.
+- Files located in the fib-inject module directory.
 
 This selective exclusion ensures that only essential components are included in the final executable, resulting in a cleaner and more efficient package. By omitting unnecessary files, fib-build creates a lightweight and performant executable ready for deployment across various environments.
 

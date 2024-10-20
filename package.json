@@ -1,6 +1,6 @@
 {
   "name": "fib-build",
-  "version": "2.0.1",
+  "version": "3.0.1",
   "description": "Build fibjs project to a standalone executable",
   "bin": {
     "fbuild": "./fbuild.js"
@@ -12,6 +12,6 @@
     "access": "public"
   },
   "dependencies": {
-    "fib-inject": "^1.0.2"
+    "fib-inject": "^2.0.1"
   }
 }
