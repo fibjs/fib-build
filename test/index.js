@@ -45,6 +45,7 @@ describe('fib-build', () => {
         cp(path.join(__dirname, '..', 'node_modules'), path.join(current_folder, 'node_modules'));
 
         cp(path.join(__dirname, '..', 'fbuild.js'), path.join(current_folder, 'node_modules', 'fib-build', 'fbuild.js'));
+        cp(path.join(__dirname, '..', 'utils'), path.join(current_folder, 'node_modules', 'fib-build', 'utils'));
         fs.mkdir(path.join(current_folder, 'node_modules', '.bin'), { recursive: true });
 
         if (process.platform === 'win32') {
@@ -62,7 +63,7 @@ describe('fib-build', () => {
         const args = [
             'fbuild',
             '.',
-            '--outfile=hello.exe'
+            'hello.exe'
         ];
 
         if (legacyMode)
@@ -71,7 +72,7 @@ describe('fib-build', () => {
         const res = child_process.execFile(process.execPath, args, { cwd: current_folder });
 
         if (res.exitCode !== 0)
-            throw new Error(res.stdout);
+            throw new Error(res.stdout ? res.stdout : res.stderr);
 
         // console.log(res.stdout);
 

@@ -37,13 +37,13 @@ fibjs --install fib-build -D
 Once installed, fib-build can be utilized via the command-line interface to package fibjs applications. The basic usage is as follows:
 
 ```sh
-fibjs fbuild <folder> --outfile=<file>
+fibjs fbuild <folder> <outfile>
 ```
 
 ### Parameter Description
 
 - `<folder>`: Directory containing the fibjs application. This is the root directory where your application code resides. Typically, this is the current directory (`.`), but you can also specify a different directory to handle other projects.
-- `--outfile=<file>`: Required. Path where the executable file should be saved. It is recommended not to save the output file in the project directory to avoid including it in the next packaging process. This specifies the output location and name of the generated executable.
+- `<outfile>`: Required. Path where the executable file should be saved. It is recommended not to save the output file in the project directory to avoid including it in the next packaging process. This specifies the output location and name of the generated executable.
 
 ### Optional Parameters
 
@@ -61,7 +61,7 @@ To package a simple fibjs application, assume you are in the project directory t
 
 ```sh
 cd your-project-directory
-fibjs fbuild . --outfile=../myAppExecutable
+fibjs fbuild . ../myAppExecutable
 ```
 
 This command will package the contents of the current directory into an executable file named myAppExecutable.
@@ -72,7 +72,7 @@ In some cases, you might want to use a different fibjs binary as the base for yo
 
 ```sh
 cd your-project-directory
-fibjs fbuild . --outfile=../myAppExecutable --execfile=path/to/other/fibjs
+fibjs fbuild . ../myAppExecutable --execfile=path/to/other/fibjs
 ```
 This command will package the current directory into an executable named myAppExecutable, using the specified fibjs binary located at path/to/other/fibjs.
 
@@ -82,7 +82,7 @@ If you encounter compatibility issues with the embedded resource mode on some pl
 
 ```sh
 cd your-project-directory
-fibjs fbuild . --outfile=../myAppExecutable --legacy
+fibjs fbuild . ../myAppExecutable --legacy
 ```
 
 This command will package the contents of the current directory into an executable file named myAppExecutable using the legacy mode.
@@ -111,10 +111,10 @@ This command signs the myAppExecutable, which can help resolve execution failure
 
 ### Output File in Project Directory
 
-If the --outfile parameter is set to a path within the project directory, the generated executable will be included in the next packaging process. This can significantly increase the size of the packaged software. To avoid this issue, it is recommended to specify an output path outside the project directory. For example:
+If the `outfile` parameter is set to a path within the project directory, the generated executable will be included in the next packaging process. This can significantly increase the size of the packaged software. To avoid this issue, it is recommended to specify an output path outside the project directory. For example:
 
 ```sh
-fibjs fbuild <folder> --outfile=../myAppExecutable
+fibjs fbuild <folder> ../myAppExecutable
 ```
 
 This ensures that the executable is saved outside the project directory, preventing it from being included in subsequent packaging operations.
@@ -128,7 +128,7 @@ To reduce the size of your application, you can inspect the output of fbuild. Du
 Although fbuild automatically detects platform compatibility and chooses a fallback option to continue packaging, unforeseen compatibility issues may still occur. If the packaged file crashes or does not run as expected, you can manually add the `--legacy` option to force fbuild to use the traditional packaging mode:
 
 ```sh
-fibjs fbuild <folder> --outfile=../myAppExecutable --legacy
+fibjs fbuild <folder> ../myAppExecutable --legacy
 ```
 
 This can help resolve issues where the packaged application does not run correctly on certain platforms.

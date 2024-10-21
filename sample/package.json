@@ -1,0 +1,14 @@
+{
+  "name": "tgui",
+  "version": "1.0.0",
+  "description": "a gui application",
+  "scripts": {
+    "build": "../fbuild.js . ./test --gui"
+  },
+  "main": "index.js",
+  "icon": "toolbox.512.png",
+  "repository": "",
+  "keywords": "",
+  "author": "",
+  "license": "ISC"
+}

@@ -6,15 +6,19 @@ const io = require('io');
 const path = require('path');
 const $ = require('child_process').sh;
 
-const { inject } = require('fib-inject');
+const mac_bundle = require('./utils/mac_bundle.js');
+const finject = require('fib-inject');
 
 const usage = `\n\x1b[1mUsage:\x1b[0m
-    fibjs fbuild <folder> --outfile=<file>
+    fibjs fbuild <folder> <outfile> [--execfile=<file>] [--legacy]
 
 \x1b[1mOptions:\x1b[0m
-    --outfile=<file>     The output file, required
+    <folder>             The folder to package, required
+    <outfile>            The output file, required
 
     --execfile=<file>    The base executable file, default is the current executable
+
+    --gui                Enable GUI mode
     --legacy             Use legacy mode to append data to the end of outfile
 
     --help               Show this help message
@@ -27,44 +31,55 @@ if (process.argv.length < 3) {
 
 const sentinelFuse = "FIBJS_FUSE_fe21d3488eb4cdf267e5ea624f2006ce";
 var execfile = process.execPath;
-var outfile;
 var folder = process.argv[2];
-var useLegacyMode = false;
+var outfile = process.argv[3];
+var legacyMode = false;
+var guiMode = false;
 const ignores = [];
 
 function config() {
-    for (var i = 3; i < process.argv.length; i++) {
+    for (var i = 4; i < process.argv.length; i++) {
         var arg = process.argv[i];
         if (arg.startsWith('--execfile=')) {
             execfile = arg.substr(11);
-        } else if (arg.startsWith('--outfile=')) {
-            outfile = arg.substr(10);
+        } else if (arg === '--gui') {
+            guiMode = true;
         } else if (arg === '--legacy') {
-            useLegacyMode = true;
+            legacyMode = true;
         } else {
-            console.log(`Unknown option: ${arg}`);
-            console.log("");
+            if (arg !== '--help') {
+                console.log(`Unknown option: ${arg}`);
+                console.log("");
+            }
 
             console.log(usage);
             process.exit(1);
         }
     }
 
-    if (!outfile) {
+    if (legacyMode && guiMode) {
+        console.log("Cannot use both --gui and --legacy options at the same time.");
+        console.log("");
         console.log(usage);
         process.exit(1);
     }
 
     folder = path.resolve(folder);
     execfile = path.resolve(execfile);
+
     outfile = path.resolve(outfile);
+    if (process.platform === 'win32' && !outfile.endsWith('.exe'))
+        outfile += '.exe';
+    else if (guiMode && process.platform === 'darwin' && guiMode && !outfile.endsWith('.app'))
+        outfile += '.app';
 
     console.log(`
-    folder:   ${folder}
-    execfile: ${execfile}
-    outfile:  ${outfile}
-    Legacy Mode: ${useLegacyMode ? 'Enabled' : 'Disabled'}
-    `);
+folder:      ${folder}
+execfile:    ${execfile}
+outfile:     ${outfile}
+guiMode:     ${guiMode ? 'Enabled' : 'Disabled'}
+Legacy Mode: ${legacyMode ? 'Enabled' : 'Disabled'}
+`);
 
     if (__dirname.startsWith(folder + path.sep))
         ignores.push(__dirname.substring(folder.length + 1) + path.sep);
@@ -82,9 +97,7 @@ function config() {
 }
 
 async function build() {
-    function make_sentinel() {
-        var buffer = fs.readFile(outfile);
-
+    function make_sentinel(buffer) {
         const firstSentinel = buffer.indexOf(sentinelFuse);
 
         if (firstSentinel === -1) {
@@ -118,7 +131,7 @@ async function build() {
             throw new Error("Sentinel already exists");
         }
 
-        fs.writeFile(outfile, buffer);
+        buffer;
     }
 
     function is_ignore(file) {
@@ -176,36 +189,52 @@ async function build() {
     const data = ms.readAll();
 
     console.log(`\nPackaged ${folder} ${data.length} bytes\n`);
-
     console.log(`Injecting ${outfile} ...\n`);
 
-    fs.copyFile(execfile, outfile, fs.constants.COPYFILE_EXCL);
-    if (process.platform !== 'win32')
-        fs.chmod(outfile, 493);
+    var executable = fs.readFileSync(execfile);
 
-    if (!useLegacyMode) {
+    if (!legacyMode) {
         try {
-            await inject(outfile, 'APP', data, {
+            const { executableFormat, buffer } = finject.injectBuffer(executable, 'APP', data, {
                 sentinelFuse,
-                overwrite: true
+                subsystem: guiMode ? 'gui' : 'cui'
             });
-        } catch (e) {
-            console.log(e);
-            useLegacyMode = true;
-        }
 
-        if (!useLegacyMode) {
-            if (process.platform === 'darwin' && $`file ${outfile}`.indexOf('Mach-O') > 0) {
-                console.log(`Signing ${outfile} ...\n`);
-                console.log($`codesign -s - ${outfile}`);
+            if (executableFormat === finject.ExecutableFormat.kMachO) {
+                if (guiMode) {
+                    mac_bundle(folder, outfile, buffer);
+                } else {
+                    fs.writeFile(outfile, buffer);
+                    if (process.platform !== 'win32')
+                        fs.chmod(outfile, 493);
+                }
+
+                if (process.platform === 'darwin') {
+                    console.log(`Signing ${outfile} ...\n`);
+                    console.log($`codesign -s - ${outfile}`);
+                }
+            } else {
+                fs.writeFile(outfile, buffer);
+                if (process.platform !== 'win32')
+                    fs.chmod(outfile, 493);
             }
+        } catch (e) {
+            try {
+                fs.unlink(outfile);
+            } catch (e) { }
+
+            console.log(e);
+            legacyMode = true;
         }
     }
 
-    if (useLegacyMode) {
-        make_sentinel();
+    if (legacyMode) {
+        make_sentinel(executable);
+        fs.writeFile(outfile, executable);
+        if (process.platform !== 'win32')
+            fs.chmod(outfile, 493);
 
-        if (process.platform === 'darwin' && $`file ${outfile}`.indexOf('Mach-O') > 0) {
+        if (process.platform === 'darwin' && finject.is_macho(executable)) {
             console.log(`Signing ${outfile} ...\n`);
             console.log($`codesign -s - ${outfile}`);
         }
