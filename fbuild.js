@@ -77,7 +77,7 @@ function config() {
 folder:      ${folder}
 execfile:    ${execfile}
 outfile:     ${outfile}
-guiMode:     ${guiMode ? 'Enabled' : 'Disabled'}
+GUI Mode:    ${guiMode ? 'Enabled' : 'Disabled'}
 Legacy Mode: ${legacyMode ? 'Enabled' : 'Disabled'}
 `);
 

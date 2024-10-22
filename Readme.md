@@ -29,7 +29,7 @@ Before starting with fib-build, ensure that fibjs is installed on your system. I
 
 ```sh
 cd your-project-directory
-fibjs --install fib-build -D
+fibjs --install fib-build
 ```
 
 ## Usage
@@ -50,6 +50,8 @@ fibjs fbuild <folder> <outfile>
 - `--execfile=<file>`: Specify the base executable file, such as a specific fibjs binary. By default, it uses the executable that is currently running. This option allows you to customize the base binary used for packaging, which can be useful for compatibility with different operating systems or specific versions of fibjs.
 
 - `--legacy`: Use legacy mode to append data to the end of the outfile. This is useful when the embedded resource mode encounters compatibility issues on some platforms. By using the append method for packaging, you can ensure better compatibility across different environments.
+
+- `--gui`: Enable GUI mode. When this option is specified, the packaging process will set the subsystem of the executable to GUI on Windows. On macOS, it will automatically package the application as a bundle. This is particularly useful for applications that require a graphical user interface, ensuring that the executable behaves correctly on different operating systems.
 
 These parameters ensure that the packaging process is flexible and can be tailored to different deployment needs, making it easier to create optimized and portable fibjs applications.
 
@@ -86,6 +88,29 @@ fibjs fbuild . ../myAppExecutable --legacy
 ```
 
 This command will package the contents of the current directory into an executable file named myAppExecutable using the legacy mode.
+
+### Enabling GUI Mode
+
+If your application requires a graphical user interface, you can use the `--gui` option to enable GUI mode. On Windows, this will set the subsystem of the executable to GUI. On macOS, it will automatically package the application as a bundle. When packaging as a bundle on macOS, `fbuild` will use the basic information from `package.json` to create the bundle. By default, `fbuild` will set a default icon for the bundle. If you want to specify a custom icon, you can add an `icon` field in your `package.json` pointing to your custom icon file.
+
+Example command:
+```sh
+cd your-project-directory
+fibjs fbuild . ../myAppExecutable --gui
+```
+Example package.json:
+```json
+{
+  "name": "myApp",
+  "version": "1.0.0",
+  "description": "My fibjs application",
+  "main": "index.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "icon": "path/to/custom/icon.icns"
+}
+```
+This command will package the contents of the current directory into an executable file named myAppExecutable with GUI mode enabled. On macOS, it will create a bundle using the information from `package.json` and set the custom icon specified in the `icon` field.
 
 ## File Ignore Rules
 

@@ -37,6 +37,7 @@ describe('fib-build', () => {
 
     afterEach(() => {
         rm(path.join(current_folder, 'hello.exe'));
+        rm(path.join(current_folder, 'hello.exe.app'));
         rm(path.join(current_folder, 'node_modules'));
     });
 
@@ -59,15 +60,13 @@ describe('fib-build', () => {
         rm(path.join(current_folder, 'hello.exe'));
     }
 
-    function test_one(legacyMode = false) {
+    function test_one(args_ = [], app) {
         const args = [
             'fbuild',
             '.',
-            'hello.exe'
+            'hello.exe',
+            ...args_
         ];
-
-        if (legacyMode)
-            args.push('--legacy');
 
         const res = child_process.execFile(process.execPath, args, { cwd: current_folder });
 
@@ -77,8 +76,9 @@ describe('fib-build', () => {
         // console.log(res.stdout);
 
         return [
-            $`${process.execPath} ${current_folder}`,
-            $`${path.join(current_folder, 'hello.exe')} -v`
+            child_process.execFile(process.execPath, [current_folder]).stdout.trim(),
+            app ? child_process.execFile(path.join(current_folder, 'hello.exe.app'), ["-v"]).stdout.trim()
+                : child_process.execFile(path.join(current_folder, 'hello.exe'), ["-v"]).stdout.trim()
         ];
     }
 
@@ -127,11 +127,47 @@ describe('fib-build', () => {
 
     it("Legacy Mode", () => {
         prepare("test5");
-        assert.deepEqual(test_one(true), [
+        assert.deepEqual(test_one([
+            "--legacy"
+        ]), [
             'Hello, World!',
             'Hello, World!'
         ]);
     });
+
+    if (process.platform === 'win32') {
+        it("GUI Mode on Windows", () => {
+            prepare("test6");
+            assert.deepEqual(test_one([
+                "--gui"
+            ]), [
+                'Windows CUI',
+                'Windows GUI'
+            ]);
+        });
+    }
+
+    if (process.platform === 'darwin') {
+        it("GUI Mode on Mac", () => {
+            prepare("test7");
+            const args = [
+                'fbuild',
+                '.',
+                'hello.exe',
+                "--gui"
+            ];
+
+            const res = child_process.execFile(process.execPath, args, { cwd: current_folder });
+            if (res.exitCode !== 0)
+                throw new Error(res.stdout ? res.stdout : res.stderr);
+
+            // console.log(res.stdout);
+
+            assert.deepEqual(fs.readFile(path.join(current_folder, 'hello.exe.app/Contents/Resources/test7.icns')),
+                fs.readFile(path.join(__dirname, '../utils/app.png')));
+
+        });
+    }
 });
 
 test.run(console.DEBUG);
