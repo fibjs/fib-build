@@ -6,8 +6,10 @@ const io = require('io');
 const path = require('path');
 const $ = require('child_process').sh;
 
-const mac_bundle = require('./utils/mac_bundle.js');
 const finject = require('fib-inject');
+
+const mac_bundle = require('./utils/mac_bundle.js');
+const ignore = require('./utils/ignore.js');
 
 const usage = `\n\x1b[1mUsage:\x1b[0m
     fibjs fbuild <folder> <outfile> [--execfile=<file>] [--legacy]
@@ -35,7 +37,7 @@ var folder = process.argv[2];
 var outfile = process.argv[3];
 var legacyMode = false;
 var guiMode = false;
-const ignores = [];
+const ignores = ignore();
 
 function config() {
     for (var i = 4; i < process.argv.length; i++) {
@@ -82,18 +84,30 @@ Legacy Mode: ${legacyMode ? 'Enabled' : 'Disabled'}
 `);
 
     if (__dirname.startsWith(folder + path.sep))
-        ignores.push(__dirname.substring(folder.length + 1) + path.sep);
+        ignores.add(__dirname.substring(folder.length + 1) + path.sep);
 
-    var inject_folder = Object.keys(module.require.cache).pop();
-    if (inject_folder.startsWith(folder + path.sep)) {
-        const module_folder = path.join('node_modules', 'fib-inject');
-        var pos = inject_folder.indexOf(module_folder);
-        if (pos > 0) {
-            inject_folder = inject_folder.substring(0, pos + module_folder.length + 1);
-            if (inject_folder.startsWith(folder + path.sep))
-                ignores.push(inject_folder.substring(folder.length + 1));
+    for (var inject_folder in module.require.cache) {
+        if (inject_folder.startsWith(folder + path.sep)) {
+            const module_folder = path.join('node_modules', 'fib-inject');
+            var pos = inject_folder.indexOf(module_folder);
+            if (pos > 0) {
+                inject_folder = inject_folder.substring(0, pos + module_folder.length + 1);
+                if (inject_folder.startsWith(folder + path.sep)) {
+                    ignores.add(inject_folder.substring(folder.length + 1));
+                    break;
+                }
+            }
         }
     }
+
+    var packageJson;
+    try {
+        packageJson = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf8'));
+    } catch (e) {
+    }
+
+    if (packageJson && packageJson.ignore)
+        ignores.add(packageJson.ignore);
 }
 
 async function build() {
@@ -141,12 +155,7 @@ async function build() {
         if (file.indexOf(path.sep + '.') > 0)
             return true;
 
-        for (var i = 0; i < ignores.length; i++) {
-            if (file.startsWith(ignores[i]))
-                return true;
-        }
-
-        return false;
+        return ignores.ignores(file);
     }
 
     if (fs.exists(outfile)) {

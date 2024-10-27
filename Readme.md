@@ -120,6 +120,26 @@ During the build process, fib-build optimizes the packaging by excluding certain
 - Files located in the fib-build module directory.
 - Files located in the fib-inject module directory.
 
+You can add an `ignore` field in your `package.json` to specify additional files or directories to be excluded. The `ignore` field can be a string or an array of strings. The patterns used in the `ignore` field follow the same syntax as `.gitignore`.
+
+Example `package.json`:
+```json
+{
+  "name": "myApp",
+  "version": "1.0.0",
+  "description": "My fibjs application",
+  "main": "index.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "ignore": [
+    "path/to/ignore1",
+    "path/to/ignore2",
+    "*.log",
+    "node_modules/"
+  ]
+}
+```
+
 This selective exclusion ensures that only essential components are included in the final executable, resulting in a cleaner and more efficient package. By omitting unnecessary files, fib-build creates a lightweight and performant executable ready for deployment across various environments.
 
 ## Common Issues and Solutions

@@ -125,6 +125,14 @@ describe('fib-build', () => {
         ]);
     });
 
+    it("ignores in package.json", () => {
+        prepare("test8");
+        assert.deepEqual(test_one(), [
+            "Hello, World!Hello, fibjs!",
+            "Hello, World!"
+        ]);
+    });
+
     it("Legacy Mode", () => {
         prepare("test5");
         assert.deepEqual(test_one([
