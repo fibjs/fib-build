@@ -168,6 +168,29 @@ This ensures that the executable is saved outside the project directory, prevent
 
 To reduce the size of your application, you can inspect the output of fbuild. During the build process, fbuild highlights files larger than 16k in red and files larger than 4k in yellow. By reviewing these larger files, you can determine if they are necessary for runtime. If they are not required, you can delete them and repackage the application. This process helps in creating a more compact and efficient executable.
 
+Additionally, you can use the `ignore` field in your `package.json` to exclude unnecessary files from the packaging process. The `ignore` field supports pattern matching similar to `.gitignore`, allowing you to specify files or directories to be excluded. This can significantly reduce the size of the final executable.
+
+Example `package.json` with `ignore` field:
+```json
+{
+  "name": "myApp",
+  "version": "1.0.0",
+  "description": "My fibjs application",
+  "main": "index.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "icon": "path/to/custom/icon.icns",
+  "ignore": [
+    "path/to/ignore1",
+    "path/to/ignore2",
+    "*.log",
+    "node_modules/"
+  ]
+}
+```
+
+By specifying unnecessary files in the `ignore` field, you can ensure they are not included in the final package, resulting in a more efficient and smaller executable.
+
 ### Platform Compatibility Issues
 
 Although fbuild automatically detects platform compatibility and chooses a fallback option to continue packaging, unforeseen compatibility issues may still occur. If the packaged file crashes or does not run as expected, you can manually add the `--legacy` option to force fbuild to use the traditional packaging mode:
