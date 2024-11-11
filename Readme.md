@@ -53,6 +53,8 @@ fibjs fbuild <folder> <outfile>
 
 - `--gui`: Enable GUI mode. When this option is specified, the packaging process will set the subsystem of the executable to GUI on Windows. On macOS, it will automatically package the application as a bundle. This is particularly useful for applications that require a graphical user interface, ensuring that the executable behaves correctly on different operating systems.
 
+- `--overwrite`: Overwrite the output file if it exists. This option allows you to force the creation of the output file even if a file with the same name already exists, preventing errors related to file existence.
+
 These parameters ensure that the packaging process is flexible and can be tailored to different deployment needs, making it easier to create optimized and portable fibjs applications.
 
 ## Application Examples

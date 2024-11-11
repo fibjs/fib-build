@@ -4,7 +4,7 @@ const $ = require('child_process').sh;
 
 function plist(packageJson) {
     const name = packageJson.name;
-    const description = packageJson.description || ' fibjs application';
+    const description = packageJson.description || 'fibjs application';
     const identifier = packageJson.identifier || 'org.fibjs.app';
     const version = packageJson.version || '1.0.0';
     const versions = version.split('.');
@@ -17,7 +17,7 @@ function plist(packageJson) {
         <key>CFBundleGetInfoString</key>
         <string>${description}</string>
         <key>CFBundleExecutable</key>
-        <string>${name}</string>
+        <string>Contents/MacOS/${name}</string>
         <key>CFBundleIdentifier</key>
         <string>${identifier}</string>
         <key>CFBundleName</key>
@@ -26,6 +26,8 @@ function plist(packageJson) {
         <string>${name}.icns</string>
         <key>CFBundleShortVersionString</key>
         <string>${version}</string>
+        <key>CFBundleVersion</key>
+        <string>${versions[0]}</string>
         <key>CFBundleInfoDictionaryVersion</key>
         <string>6.0</string>
         <key>CFBundlePackageType</key>

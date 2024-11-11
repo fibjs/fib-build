@@ -22,6 +22,7 @@ const usage = `\n\x1b[1mUsage:\x1b[0m
 
     --gui                Enable GUI mode
     --legacy             Use legacy mode to append data to the end of outfile
+    --overwrite          Overwrite the output file if it exists
 
     --help               Show this help message
 `;
@@ -37,6 +38,7 @@ var folder = process.argv[2];
 var outfile = process.argv[3];
 var legacyMode = false;
 var guiMode = false;
+var overwrite = false;
 const ignores = ignore();
 
 function config() {
@@ -48,6 +50,8 @@ function config() {
             guiMode = true;
         } else if (arg === '--legacy') {
             legacyMode = true;
+        } else if (arg === '--overwrite') {
+            overwrite = true;
         } else {
             if (arg !== '--help') {
                 console.log(`Unknown option: ${arg}`);
@@ -158,7 +162,7 @@ async function build() {
         return ignores.ignores(file);
     }
 
-    if (fs.exists(outfile)) {
+    if (!overwrite && fs.exists(outfile)) {
         console.log(`${outfile} already exists, please remove it first.\n`);
         process.exit(1);
     }
