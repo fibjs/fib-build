@@ -172,7 +172,7 @@ describe('fib-build', () => {
             // console.log(res.stdout);
 
             assert.deepEqual(fs.readFile(path.join(current_folder, 'hello.exe.app/Contents/Resources/test7.icns')),
-                fs.readFile(path.join(__dirname, '../utils/app.png')));
+                fs.readFile(path.join(__dirname, '../utils/app.icns')));
 
         });
     }

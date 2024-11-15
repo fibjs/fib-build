@@ -1,6 +1,6 @@
 {
   "name": "fib-build",
-  "version": "4.2.0",
+  "version": "5.0.0",
   "description": "Build fibjs project to a standalone executable",
   "bin": {
     "fbuild": "./fbuild.js"
